@@ -19,10 +19,10 @@
     "@vue/test-utils": "^2.0.0-rc.10"
   },
   "devDependencies": {
-    "@babel/core": "7.9.0",
-    "@babel/plugin-transform-modules-commonjs": "7.9.6",
-    "@babel/preset-env": "7.9.5",
-    "@babel/preset-typescript": "7.10.1",
+    "@babel/core": "7.16.0",
+    "@babel/plugin-transform-modules-commonjs": "7.16.0",
+    "@babel/preset-env": "7.16.4",
+    "@babel/preset-typescript": "7.16.0",
     "@cypress/code-coverage": "3.8.1",
     "@cypress/webpack-dev-server": "0.0.0-development",
     "@intlify/vue-i18n-loader": "2.0.0-rc.1",
@@ -32,7 +32,7 @@
     "@vue/cli-service": "~4.4.0",
     "@vue/compiler-sfc": "3.1.5",
     "axios": "0.19.2",
-    "babel-loader": "8.1.0",
+    "babel-loader": "8.2.3",
     "babel-plugin-istanbul": "^6.0.0",
     "babel-preset-typescript-vue3": "^2.0.14",
     "css-loader": "3.4.2",

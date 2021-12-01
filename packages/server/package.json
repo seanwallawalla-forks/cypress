@@ -19,7 +19,7 @@
     "test-watch": "./test/support/watch test"
   },
   "dependencies": {
-    "@babel/parser": "7.13.0",
+    "@babel/parser": "7.16.4",
     "@benmalka/foxdriver": "0.4.1",
     "@cypress/commit-info": "2.2.0",
     "@cypress/get-windows-proxy": "1.6.2",
@@ -122,8 +122,8 @@
     "winston": "2.4.4"
   },
   "devDependencies": {
-    "@babel/core": "7.9.0",
-    "@babel/preset-env": "7.9.0",
+    "@babel/core": "7.16.0",
+    "@babel/preset-env": "7.16.4",
     "@cypress/debugging-proxy": "2.0.1",
     "@cypress/json-schemas": "5.39.0",
     "@cypress/sinon-chai": "2.9.1",
@@ -147,7 +147,7 @@
     "@types/chrome": "0.0.101",
     "@types/http-proxy": "1.17.4",
     "awesome-typescript-loader": "5.2.1",
-    "babel-loader": "8.1.0",
+    "babel-loader": "8.2.3",
     "body-parser": "1.19.0",
     "chai-as-promised": "7.1.1",
     "chai-subset": "1.6.0",

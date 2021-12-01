@@ -10,8 +10,8 @@
     "test:ci": "node ./scripts/run.js"
   },
   "devDependencies": {
-    "@babel/core": "7.9.0",
-    "@babel/preset-env": "7.9.0",
+    "@babel/core": "7.16.0",
+    "@babel/preset-env": "7.16.4",
     "@cypress/commit-info": "2.2.0",
     "@cypress/debugging-proxy": "2.0.1",
     "@cypress/json-schemas": "5.39.0",
@@ -27,7 +27,7 @@
     "@packages/server": "0.0.0-development",
     "@packages/socket": "0.0.0-development",
     "@packages/ts": "0.0.0-development",
-    "babel-loader": "8.1.0",
+    "babel-loader": "8.2.3",
     "bluebird": "3.7.2",
     "body-parser": "1.19.0",
     "cachedir": "2.3.0",

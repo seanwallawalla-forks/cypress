@@ -4,13 +4,19 @@ describe('Index', () => {
   beforeEach(() => {
     cy.setupE2E('component-tests')
     cy.initializeApp()
+
+    cy.withCtx(async (ctx, { testState }) => {
+      testState.newFilePath = 'cypress/integration/new-file-spec.js'
+
+      await ctx.actions.file.removeFileInProject(testState.newFilePath)
+    })
   })
 
   context('with no specs', () => {
     beforeEach(() => {
       cy.visitApp()
-      cy.withCtx((ctx, o) => {
-        ctx.actions.file.removeFileInProject('cypress/integration/integration-spec.js')
+      cy.withCtx(async (ctx, o) => {
+        await ctx.actions.file.removeFileInProject('cypress/integration/integration-spec.js')
       })
     })
 
@@ -21,6 +27,34 @@ describe('Index', () => {
       // we just can't mock config values in GQL yet.
       cy.visitApp()
       cy.contains(defaultMessages.createSpec.page.defaultPatternNoSpecs.title).should('be.visible')
+    })
+  })
+
+  context('with specs', () => {
+    it('refreshes spec list on spec changes', () => {
+      cy.visitApp()
+
+      cy.withCtx((ctx, { testState }) => {
+        const addedSpec = ctx.project.currentProjectSpecs.find((spec) => spec.absolute.includes(testState.newFilePath))
+
+        expect(addedSpec).be.equal(undefined)
+      })
+
+      cy.get('[data-cy="spec-item"]').should('have.length', 1)
+
+      cy.withCtx((ctx, { testState }) => {
+        return ctx.actions.file.writeFileInProject(testState.newFilePath, '')
+      })
+
+      // ctx.emitter.toApp is not triggering a re-query, so we can't test against UI (yet)
+      cy.wait(200)
+      cy.withCtx((ctx, { testState }) => {
+        expect(ctx.project.currentProjectSpecs).have.length(2)
+
+        const addedSpec = ctx.project.currentProjectSpecs.find((spec) => spec.absolute.includes(testState.newFilePath))
+
+        expect(addedSpec).not.be.equal(undefined)
+      })
     })
   })
 })

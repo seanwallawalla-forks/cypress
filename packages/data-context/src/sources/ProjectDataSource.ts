@@ -3,12 +3,15 @@ import { FoundSpec, FrontendFramework, FRONTEND_FRAMEWORKS, ResolvedFromConfig, 
 import { scanFSForAvailableDependency } from 'create-cypress-tests'
 import path from 'path'
 import Debug from 'debug'
+import chokidar, { FSWatcher } from 'chokidar'
 
 const debug = Debug('cypress:data-context:project-data-source')
 
 import type { DataContext } from '..'
 
 export class ProjectDataSource {
+  private _specWatcher: FSWatcher | null = null
+
   constructor (private ctx: DataContext) {}
 
   private get api () {
@@ -27,6 +30,14 @@ export class ProjectDataSource {
 
   getConfig (projectRoot: string) {
     return this.ctx.config.getConfigForProject(projectRoot)
+  }
+
+  get currentProjectSpecs (): FoundSpec[] {
+    if (!this.ctx.currentProject?.specs) {
+      throw Error('currentProject or specs are undefined.')
+    }
+
+    return this.ctx.currentProject.specs
   }
 
   async findSpecs (projectRoot: string, specType: SpecType, specPatternFromCliArg?: string[]): Promise<FoundSpec[]> {
@@ -92,6 +103,49 @@ export class ProjectDataSource {
     const currentSpecAbs = Buffer.from(base64Id, 'base64').toString().split(':')[1]
 
     return specs.find((x) => x.absolute === currentSpecAbs) ?? null
+  }
+
+  async startSpecWatcher (projectRoot: string, specType: SpecType, specPatternFromCliArg?: string[]) {
+    if (this._specWatcher) {
+      await this._specWatcher.close()
+    }
+
+    const currentProject = this.ctx.currentProject
+
+    if (!currentProject) {
+      throw new Error('Cannot start spec watcher without current project')
+    }
+
+    const testingType = specType === 'component' ? 'component' : 'e2e'
+
+    let specPatterns: string | string[]
+
+    if (specPatternFromCliArg) {
+      specPatterns = specPatternFromCliArg
+    } else {
+      const config = await this.getConfig(projectRoot)
+
+      specPatterns = config[testingType]?.specPattern
+    }
+
+    const onSpecsChanged = async () => {
+      const specFiles = await this.findSpecs(projectRoot, specType)
+
+      currentProject.specs = specFiles
+      if (testingType === 'component') {
+        this.api.getDevServer().updateSpecs(specFiles)
+      }
+
+      this.ctx.emitter.toApp()
+    }
+
+    this._specWatcher = chokidar.watch(specPatterns ?? [], { cwd: projectRoot, ignoreInitial: true })
+    this._specWatcher.on('add', onSpecsChanged)
+    this._specWatcher.on('unlink', onSpecsChanged)
+  }
+
+  async stopSpecWatcher () {
+    await this._specWatcher?.close()
   }
 
   async getResolvedConfigFields (projectRoot: string): Promise<ResolvedFromConfig[]> {

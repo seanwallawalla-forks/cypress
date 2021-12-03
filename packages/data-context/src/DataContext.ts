@@ -346,6 +346,7 @@ export class DataContext {
       this.util.disposeLoaders(),
       this.actions.project.clearActiveProject(),
       this.actions.dev.dispose(),
+      this.project.stopSpecWatcher(),
     ])
   }
 

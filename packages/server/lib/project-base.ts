@@ -28,9 +28,8 @@ import plugins from './plugins'
 import Watchers from './watchers'
 import devServer from './plugins/dev-server'
 import preprocessor from './plugins/preprocessor'
-import { SpecsStore } from './specs-store'
 import { checkSupportFile, getDefaultConfigFilePath } from './project_utils'
-import type { FoundBrowser, FoundSpec, OpenProjectLaunchOptions } from '@packages/types'
+import type { FoundBrowser, OpenProjectLaunchOptions } from '@packages/types'
 import { makeLegacyDataContext } from './makeDataContext'
 import type { DataContext } from '@packages/data-context'
 
@@ -203,10 +202,8 @@ export class ProjectBase<TServer extends Server> extends EE {
     }
 
     const {
-      specsStore,
-      startSpecWatcher,
       ctDevServerPort,
-    } = await this.initializeSpecStore(cfg)
+    } = await this.initializeSpecsAndDevServer(cfg)
 
     if (this.testingType === 'component') {
       cfg.baseUrl = `http://localhost:${ctDevServerPort}`
@@ -221,13 +218,12 @@ export class ProjectBase<TServer extends Server> extends EE {
       shouldCorrelatePreRequests: this.shouldCorrelatePreRequests,
       testingType: this.testingType,
       SocketCtor: this.testingType === 'e2e' ? SocketE2E : SocketCt,
-      specsStore,
     })
 
     this.ctx.setAppServerPort(port)
     this._isServerOpen = true
 
-    // if we didnt have a cfg.port
+    // if we didn't have a cfg.port
     // then get the port once we
     // open the server
     if (!cfg.port) {
@@ -293,13 +289,6 @@ export class ProjectBase<TServer extends Server> extends EE {
     if (cfg.isTextTerminal) {
       return
     }
-
-    // start watching specs
-    // whenever a spec file is added or removed, we notify the
-    // <SpecList>
-    // This is only used for CT right now by general users.
-    // It is is used with E2E if the CypressInternal_UseInlineSpecList flag is true.
-    startSpecWatcher()
 
     if (!cfg.experimentalInteractiveRunEvents) {
       return
@@ -375,16 +364,30 @@ export class ProjectBase<TServer extends Server> extends EE {
     options.onError(err)
   }
 
-  async initializeSpecStore (updatedConfig: Cfg): Promise<{
-    specsStore: SpecsStore
+  async initializeSpecsAndDevServer (updatedConfig: Cfg): Promise<{
     ctDevServerPort: number | undefined
-    startSpecWatcher: () => void
   }> {
-    // const specs = await this.
     const specs = await this.ctx.project.findSpecs(this.projectRoot,
       this.testingType === 'component' ? 'component' : 'integration')
 
-    return this.initSpecStore({ specs, config: updatedConfig })
+    let ctDevServerPort: number | undefined
+
+    if (!this.ctx.currentProject) {
+      throw new Error('Cannot set specs without current project')
+    }
+
+    this.ctx.currentProject.specs = specs
+    updatedConfig.specs = specs
+
+    if (this.testingType === 'component' && !this.options.skipPluginIntializeForTesting) {
+      const { port } = await this.startCtDevServer(specs, updatedConfig)
+
+      ctDevServerPort = port
+    }
+
+    return {
+      ctDevServerPort,
+    }
   }
 
   // TODO(tim): Improve this when we completely overhaul the rest of the code here,
@@ -422,40 +425,6 @@ export class ProjectBase<TServer extends Server> extends EE {
     }
 
     return { port: devServerOptions.port }
-  }
-
-  async initSpecStore ({
-    specs,
-    config,
-  }: {
-    specs: FoundSpec[]
-    config: Cfg
-  }) {
-    const specsStore = new SpecsStore()
-
-    const startSpecWatcher = () => {
-      if (this.testingType === 'component') {
-      // ct uses the dev-server to build and bundle the speces.
-      // send new files to dev server
-        devServer.updateSpecs(specs)
-      }
-    }
-
-    let ctDevServerPort: number | undefined
-
-    if (this.testingType === 'component' && !this.options.skipPluginIntializeForTesting) {
-      const { port } = await this.startCtDevServer(specs, config)
-
-      ctDevServerPort = port
-    }
-
-    specsStore.storeSpecFiles(specs)
-
-    return {
-      specsStore,
-      ctDevServerPort,
-      startSpecWatcher,
-    }
   }
 
   async watchPluginsFile (cfg, options) {

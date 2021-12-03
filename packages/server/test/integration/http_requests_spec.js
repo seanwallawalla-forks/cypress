@@ -21,7 +21,6 @@ const EventSource = require('eventsource')
 const config = require(`${root}lib/config`)
 const { ServerE2E } = require(`${root}lib/server-e2e`)
 const ProjectBase = require(`${root}lib/project-base`).ProjectBase
-const { SpecsStore } = require(`${root}/lib/specs-store`)
 const Watchers = require(`${root}lib/watchers`)
 const pluginsModule = require(`${root}lib/plugins`)
 const preprocessor = require(`${root}lib/plugins/preprocessor`)
@@ -167,7 +166,6 @@ describe('Routes', () => {
               SocketCtor: SocketE2E,
               getSpec: () => spec,
               getCurrentBrowser: () => null,
-              specsStore: new SpecsStore({}, 'e2e'),
               createRoutes,
               testingType: 'e2e',
               exit: false,

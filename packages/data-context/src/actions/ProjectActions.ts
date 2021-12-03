@@ -1,5 +1,5 @@
 import type { CodeGenType, MutationAddProjectArgs, MutationSetProjectPreferencesArgs, TestingTypeEnum } from '@packages/graphql/src/gen/nxs.gen'
-import type { FoundBrowser, FoundSpec, FullConfig, LaunchArgs, LaunchOpts, OpenProjectLaunchOptions, Preferences, SettingsOptions } from '@packages/types'
+import type { BaseSpec, FoundBrowser, FoundSpec, FullConfig, LaunchArgs, LaunchOpts, OpenProjectLaunchOptions, Preferences, SettingsOptions } from '@packages/types'
 import execa from 'execa'
 import path from 'path'
 import type { ActiveProjectShape, ProjectShape } from '../data/coreDataShape'
@@ -26,6 +26,9 @@ export interface ProjectApiShape {
   clearProjectPreferences(projectTitle: string): Promise<unknown>
   clearAllProjectPreferences(): Promise<unknown>
   closeActiveProject(): Promise<unknown>
+  getDevServer (): {
+    updateSpecs: (specs: BaseSpec[]) => void
+  }
   error: {
     throw: (type: string, ...args: any) => Error
     get(type: string, ...args: any): Error & { code: string, isCypressErr: boolean}
@@ -257,6 +260,11 @@ export class ProjectActions {
 
     this.ctx.appData.currentTestingType = testingType
 
+    const specType = testingType === 'component' ? 'component' : 'integration'
+
+    this.ctx.currentProject.specs = await this.ctx.project.findSpecs(this.ctx.currentProject.projectRoot, specType)
+    this.ctx.project.startSpecWatcher(this.ctx.currentProject.projectRoot, specType)
+
     return this.api.launchProject(browser, activeSpec ?? emptySpec, options)
   }
 
@@ -283,6 +291,9 @@ export class ProjectActions {
     this.ctx.coreData.wizard.chosenTestingType = testingType
     await this.initializeActiveProject()
     this.ctx.appData.currentTestingType = testingType
+
+    this.ctx.currentProject.specs = await this.ctx.project.findSpecs(this.ctx.currentProject.projectRoot, testingType === 'component' ? 'component' : 'integration')
+    this.ctx.project.startSpecWatcher(this.ctx.currentProject.projectRoot, testingType === 'component' ? 'component' : 'integration')
 
     return this.api.launchProject(browser, spec, {})
   }
@@ -451,6 +462,7 @@ export class ProjectActions {
     this.ctx.actions.wizard.resetWizard()
     this.ctx.actions.electron.refreshBrowserWindow()
     this.ctx.actions.electron.showBrowserWindow()
+    this.ctx.project.stopSpecWatcher()
   }
 
   async scaffoldIntegration () {
